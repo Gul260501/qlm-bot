@@ -1,41 +1,29 @@
-
 import logging
 from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, CallbackContext
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, CallbackContext
 
-# تنظیمات لاگ‌ها
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-
-# اطلاعات محیطی
 import os
-TOKEN = os.environ.get("Bot_TOKEN")
-ADMIN_ID = os.environ.get("ADMIN_ID")
 
-# دکمه‌های منو اصلی
-main_menu_buttons = [
+TOKEN = os.getenv("Bot_TOKEN")
+ADMIN_ID = os.getenv("ADMIN_ID")
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+menu_keyboard = [
     ["ثبت شرکت در روسیه", "حسابداری و گزارش‌دهی مالی"],
     ["خدمات حقوقی و اقامتی", "تبلیغات و بازاریابی"],
     ["دریافت مشاوره", "ارسال مدارک"]
 ]
+menu_markup = ReplyKeyboardMarkup(menu_keyboard, resize_keyboard=True)
 
-# پاسخ به /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.message.from_user
-    logging.info(f"{user.username} started the bot.")
-    await update.message.reply_text(
-        "به ربات QLM خوش آمدید! لطفاً یکی از گزینه‌های زیر را انتخاب کنید:",
-        reply_markup=ReplyKeyboardMarkup(main_menu_buttons, resize_keyboard=True)
-    )
+    await update.message.reply_text("سلام! به ربات QLM خوش آمدید. لطفاً یکی از گزینه‌ها را انتخاب کنید:", reply_markup=menu_markup)
 
-# هندلر پیام‌های متنی
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     if text == "ثبت شرکت در روسیه":
-        await update.message.reply_text(
+        msg = (
             "لطفاً نوع شرکت را انتخاب کنید:
 
 "
@@ -56,69 +44,68 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 "
             "• نوع فعالیت
 "
-            "• شماره تماس روسیه
-"
+            "• شماره تماس روسیه"
         )
+        await update.message.reply_text(msg, reply_markup=menu_markup)
 
     elif text == "حسابداری و گزارش‌دهی مالی":
-        await update.message.reply_text(
-            "خدمات حسابداری شامل:
+        msg = (
+            "ما خدمات حسابداری کامل از جمله:
 "
-            "• تهیه گزارش مالیاتی
+            "• تهیه و ارسال گزارشات مالیاتی
 "
-            "• حقوق پرسنل
+            "• حسابداری ماهانه و سالانه
 "
-            "• مشاوره مالی"
+            "• مشاوره مالیاتی ارائه می‌دهیم.
+"
+            "جهت اطلاعات بیشتر لطفاً با ما تماس بگیرید."
         )
+        await update.message.reply_text(msg, reply_markup=menu_markup)
+
+    elif text == "خدمات حقوقی و اقامتی":
+        msg = (
+            "خدمات حقوقی و اقامتی:
+"
+            "• اخذ انواع اقامت روسیه
+"
+            "• تمدید اقامت و ویزا
+"
+            "• ثبت آدرس قانونی و دعوت‌نامه
+"
+            "• مشاوره با وکیل رسمی"
+        )
+        await update.message.reply_text(msg, reply_markup=menu_markup)
 
     elif text == "تبلیغات و بازاریابی":
-        await update.message.reply_text(
-            "ما خدمات زیر را ارائه می‌دهیم:
+        msg = (
+            "خدمات تبلیغات و بازاریابی ما شامل:
 "
-            "• طراحی سایت
+            "• طراحی سایت و فروشگاه آنلاین
 "
             "• مدیریت شبکه‌های اجتماعی
 "
-            "• اجرای کمپین‌های تبلیغاتی"
+            "• بازاریابی محتوایی و برندینگ
+"
+            "• تبلیغات در پلتفرم‌های روسیه"
         )
-
-    elif text == "خدمات حقوقی و اقامتی":
-        await update.message.reply_text(
-            "خدمات حقوقی و اقامتی شامل:
-"
-            "• اقامت کاری
-"
-            "• ویزای تحصیلی
-"
-            "• تمدید اقامت و دریافت پاسپورت دوم"
-        )
+        await update.message.reply_text(msg, reply_markup=menu_markup)
 
     elif text == "دریافت مشاوره":
-        await update.message.reply_text("لطفاً سؤال خود را بنویسید تا کارشناسان ما پاسخ دهند.")
-        context.user_data["awaiting_question"] = True
+        msg = "لطفاً سوال مشاوره‌ای خود را ارسال کنید تا کارشناسان ما با شما تماس بگیرند."
+        await update.message.reply_text(msg, reply_markup=menu_markup)
 
     elif text == "ارسال مدارک":
-        await update.message.reply_text("مدارک خود را ارسال کنید. پشتیبانی از فایل‌های PDF، عکس، Word و ...")
-
-    elif context.user_data.get("awaiting_question"):
-        context.user_data["awaiting_question"] = False
-        admin_message = f"سؤال مشاوره‌ای از کاربر @{update.message.from_user.username}:
-
-{text}"
-        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message)
-        await update.message.reply_text("سؤال شما برای کارشناسان ما ارسال شد. به‌زودی پاسخ داده خواهد شد.")
+        msg = "لطفاً مدارک خود را ارسال کنید. (فایل، عکس یا PDF)"
+        await update.message.reply_text(msg, reply_markup=menu_markup)
 
     else:
-        await update.message.reply_text("لطفاً یکی از گزینه‌های موجود را انتخاب کنید.")
+        msg = "دستور نامشخص است. لطفاً یکی از گزینه‌های منو را انتخاب کنید."
+        await update.message.reply_text(msg, reply_markup=menu_markup)
 
-# راه‌اندازی اپلیکیشن
-def main():
+if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     app.run_polling()
-
-if __name__ == "__main__":
-    main()
