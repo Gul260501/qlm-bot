@@ -1,111 +1,63 @@
-import logging
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, CallbackContext
 
-import os
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, ConversationHandler
 
-TOKEN = os.getenv("Bot_TOKEN")
-ADMIN_ID = os.getenv("ADMIN_ID")
+CHOOSING_TYPE, SHOW_INFO = range(2)
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-
-menu_keyboard = [
-    ["ثبت شرکت در روسیه", "حسابداری و گزارش‌دهی مالی"],
-    ["خدمات حقوقی و اقامتی", "تبلیغات و بازاریابی"],
-    ["دریافت مشاوره", "ارسال مدارک"]
+company_keyboard = [
+    ["مسئولیت محدود (OOO)"],
+    ["سهامی خاص (AO)"],
+    ["کارآفرینی انفرادی (ИП)"],
+    ["بازگشت به منو"]
 ]
-menu_markup = ReplyKeyboardMarkup(menu_keyboard, resize_keyboard=True)
+company_markup = ReplyKeyboardMarkup(company_keyboard, one_time_keyboard=True, resize_keyboard=True)
+
+company_info = {
+    "مسئولیت محدود (OOO)": "شرکت مسئولیت محدود (OOO) رایج‌ترین نوع شرکت در روسیه است. مدارک مورد نیاز:\n- پاسپورت\n- آدرس اقامت\n- نوع فعالیت\n- سرمایه اولیه: حداقل 10,000 روبل",
+    "سهامی خاص (AO)": "شرکت سهامی خاص (AO) مناسب فعالیت‌های بزرگ‌تر است. مدارک مورد نیاز:\n- پاسپورت\n- آدرس اقامت\n- مشخصات سهام‌داران\n- سرمایه اولیه: حداقل 100,000 روبل",
+    "کارآفرینی انفرادی (ИП)": "کارآفرینی انفرادی (ИП) مخصوص افراد بدون شریک است. مدارک مورد نیاز:\n- پاسپورت\n- آدرس اقامت\n- نوع فعالیت\n- بدون نیاز به سرمایه اولیه",
+}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("سلام! به ربات QLM خوش آمدید. لطفاً یکی از گزینه‌ها را انتخاب کنید:", reply_markup=menu_markup)
+    keyboard = [
+        ["ثبت شرکت در روسیه"],
+        ["حسابداری و گزارش‌دهی مالی", "خدمات حقوقی و اقامتی"],
+        ["تبلیغات و بازاریابی", "دریافت مشاوره"],
+        ["ارسال مدارک"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text("به ربات QLM خوش آمدید. لطفاً یک گزینه را انتخاب کنید:", reply_markup=reply_markup)
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+async def register_company(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("لطفاً نوع شرکت را انتخاب کنید:", reply_markup=company_markup)
+    return CHOOSING_TYPE
 
-    if text == "ثبت شرکت در روسیه":
-        msg = (
-            "لطفاً نوع شرکت را انتخاب کنید:
-
-"
-            "انواع شرکت‌ها:
-"
-            "• مسئولیت محدود (ООО)
-"
-            "• سهامی خاص (АО)
-"
-            "• کارآفرینی انفرادی (ИП)
-
-"
-            "مدارک مورد نیاز:
-"
-            "• پاسپورت
-"
-            "• آدرس اقامت
-"
-            "• نوع فعالیت
-"
-            "• شماره تماس روسیه"
-        )
-        await update.message.reply_text(msg, reply_markup=menu_markup)
-
-    elif text == "حسابداری و گزارش‌دهی مالی":
-        msg = (
-            "ما خدمات حسابداری کامل از جمله:
-"
-            "• تهیه و ارسال گزارشات مالیاتی
-"
-            "• حسابداری ماهانه و سالانه
-"
-            "• مشاوره مالیاتی ارائه می‌دهیم.
-"
-            "جهت اطلاعات بیشتر لطفاً با ما تماس بگیرید."
-        )
-        await update.message.reply_text(msg, reply_markup=menu_markup)
-
-    elif text == "خدمات حقوقی و اقامتی":
-        msg = (
-            "خدمات حقوقی و اقامتی:
-"
-            "• اخذ انواع اقامت روسیه
-"
-            "• تمدید اقامت و ویزا
-"
-            "• ثبت آدرس قانونی و دعوت‌نامه
-"
-            "• مشاوره با وکیل رسمی"
-        )
-        await update.message.reply_text(msg, reply_markup=menu_markup)
-
-    elif text == "تبلیغات و بازاریابی":
-        msg = (
-            "خدمات تبلیغات و بازاریابی ما شامل:
-"
-            "• طراحی سایت و فروشگاه آنلاین
-"
-            "• مدیریت شبکه‌های اجتماعی
-"
-            "• بازاریابی محتوایی و برندینگ
-"
-            "• تبلیغات در پلتفرم‌های روسیه"
-        )
-        await update.message.reply_text(msg, reply_markup=menu_markup)
-
-    elif text == "دریافت مشاوره":
-        msg = "لطفاً سوال مشاوره‌ای خود را ارسال کنید تا کارشناسان ما با شما تماس بگیرند."
-        await update.message.reply_text(msg, reply_markup=menu_markup)
-
-    elif text == "ارسال مدارک":
-        msg = "لطفاً مدارک خود را ارسال کنید. (فایل، عکس یا PDF)"
-        await update.message.reply_text(msg, reply_markup=menu_markup)
-
+async def choose_company_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    choice = update.message.text
+    if choice == "بازگشت به منو":
+        await start(update, context)
+        return ConversationHandler.END
+    elif choice in company_info:
+        await update.message.reply_text(company_info[choice], reply_markup=company_markup)
+        return SHOW_INFO
     else:
-        msg = "دستور نامشخص است. لطفاً یکی از گزینه‌های منو را انتخاب کنید."
-        await update.message.reply_text(msg, reply_markup=menu_markup)
+        await update.message.reply_text("لطفاً یکی از گزینه‌های معتبر را انتخاب کنید.", reply_markup=company_markup)
+        return CHOOSING_TYPE
 
-if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("فرآیند لغو شد.", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
 
-    app.run_polling()
+conv_handler = ConversationHandler(
+    entry_points=[MessageHandler(filters.Regex("^ثبت شرکت در روسیه$"), register_company)],
+    states={
+        CHOOSING_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_company_type)],
+        SHOW_INFO: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_company_type)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+)
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(conv_handler)
